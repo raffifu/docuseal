@@ -4,6 +4,7 @@ import { encodeMethodIntoRequestBody } from '@hotwired/turbo-rails/app/javascrip
 import { createApp, reactive } from 'vue'
 import TemplateBuilder from './template_builder/builder'
 import ImportList from './template_builder/import_list'
+import Generator from './report_generator/generator'
 
 import ToggleVisible from './elements/toggle_visible'
 import ToggleCookies from './elements/toggle_cookies'
@@ -99,7 +100,7 @@ safeRegisterElement('checkbox-group', CheckboxGroup)
 safeRegisterElement('masked-input', MaskedInput)
 
 safeRegisterElement('template-builder', class extends HTMLElement {
-  connectedCallback () {
+  connectedCallback() {
     document.addEventListener('turbo:submit-end', this.onSubmit)
 
     this.appElem = document.createElement('div')
@@ -137,7 +138,7 @@ safeRegisterElement('template-builder', class extends HTMLElement {
     }
   }
 
-  disconnectedCallback () {
+  disconnectedCallback() {
     document.removeEventListener('turbo:submit-end', this.onSubmit)
 
     this.app?.unmount()
@@ -146,7 +147,7 @@ safeRegisterElement('template-builder', class extends HTMLElement {
 })
 
 safeRegisterElement('import-list', class extends HTMLElement {
-  connectedCallback () {
+  connectedCallback() {
     this.appElem = document.createElement('div')
 
     this.app = createApp(ImportList, {
@@ -161,7 +162,28 @@ safeRegisterElement('import-list', class extends HTMLElement {
     this.appendChild(this.appElem)
   }
 
-  disconnectedCallback () {
+  disconnectedCallback() {
+    this.app?.unmount()
+    this.appElem?.remove()
+  }
+})
+
+safeRegisterElement('report-generator', class extends HTMLElement {
+  connectedCallback() {
+    this.appElem = document.createElement('div')
+
+    this.app = createApp(Generator, {
+      authenticityToken: document.querySelector('meta[name="csrf-token"]')?.content,
+      formId: this.dataset.formId,
+      backendUrl: this.dataset.backendUrl
+    })
+
+    this.app.mount(this.appElem)
+
+    this.appendChild(this.appElem)
+  }
+
+  disconnectedCallback() {
     this.app?.unmount()
     this.appElem?.remove()
   }

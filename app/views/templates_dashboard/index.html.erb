@@ -23,6 +23,11 @@
         <%= svg_icon('plus', class: 'w-6 h-6 stroke-2') %>
         <span class="hidden md:block"><%= t('create') %></span>
       <% end %>
+      <%= link_to :reports, class: 'white-button !border gap-2' do %>
+        <%= svg_icon('plus', class: 'w-6 h-6 stroke-2') %>
+        <span class="hidden md:block">Report</span>
+      <% end %>
+
     <% end %>
   </div>
 </div>
