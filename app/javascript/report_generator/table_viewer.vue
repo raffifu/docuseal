@@ -1,10 +1,8 @@
 <script setup>
-import { ref } from 'vue'
 
 defineProps({
   data: Array
 })
-
 
 </script>
 
@@ -13,47 +11,48 @@ defineProps({
     <thead>
       <tr>
         <th colspan="1" rowspan="2">No.</th>
-        <th colspan="1" rowspan="2">Temuan</th>
-        <th colspan="1" rowspan="2">Dokumentasi</th>
-        <th colspan="3" rowspan="1">Lokasi</th>
-        <th colspan="1" rowspan="2">Tingkat kerusakan</th>
+        <th colspan="1" rowspan="2">Asset</th>
+        <th colspan="1" rowspan="2">Jenis Kerusakan Aset</th>
+        <th colspan="5" rowspan="1">Lokasi (KM)</th>
         <th colspan="1" rowspan="2">Unit</th>
         <th colspan="3" rowspan="1">Volume</th>
-        <th colspan="2" rowspan="1">Rekomendasi</th>
-        <th colspan="2" rowspan="1">Approval BUJT</th>
+        <th colspan="2" rowspan="1">Severity Level</th>
+        <th colspan="1" rowspan="2">Usulan</th>
+        <th colspan="1" rowspan="2">Dokumentasi Kerusakan</th>
       </tr>
       <tr>
-        <th colspan="1">STA</th>
-        <th colspan="1">Lajur</th>
+        <th colspan="1">Area</th>
+        <th colspan="1">Awal</th>
+        <th colspan="1">Akhir</th>
         <th colspan="1">Jalur</th>
+        <th colspan="1">LAJUR / OS / IS</th>
         <th colspan="1">P</th>
         <th colspan="1">L</th>
         <th colspan="1">T</th>
-        <th colspan="1">Penanganan Sementara (PS)</th>
-        <th colspan="1">Penanganan Permanen (PP)</th>
-        <th colspan="1">PS</th>
-        <th colspan="1">PP</th>
+        <th colspan="1">Fisk</th>
+        <th colspan="1">Fungsi</th>
       </tr>
     </thead>
     <tbody>
       <tr v-for="(it, idx) in data" :key="idx">
         <td>{{ idx + 1 }}</td>
-        <td>{{ it.defect }}</td>
-        <td>
-          <img :src="'https://drive-proxy.raffifebriandikau.workers.dev/download?id=' + it.image" />
-        </td>
-        <td>{{ it.severity }}</td>
-        <td>{{ it.unit }}</td>
+        <td>{{ it.aset }}</td>
+        <td>{{ it.subindikator }}</td>
+        <td>{{ it.area }}</td>
         <td>{{ it.awal }}</td>
-        <td>{{ it.lajur }}</td>
+        <td>{{ it.akhir }}</td>
         <td>{{ it.jalur }}</td>
+        <td>{{ it.lajur }}</td>
+        <td>{{ it.unit }}</td>
         <td>{{ it.panjang }}</td>
         <td>{{ it.lebar }}</td>
         <td>{{ it.tinggi }}</td>
+        <td>{{ it.severity }}</td>
         <td></td>
-        <td></td>
-        <td></td>
-        <td></td>
+        <td>{{ it.usulan }}</td>
+        <td>
+          <img :src="'https://drive-proxy.raffifebriandikau.workers.dev/download?id=' + it.image" />
+        </td>
       </tr>
     </tbody>
   </table>

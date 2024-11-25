@@ -19,6 +19,88 @@ const endDate = ref(null)
 const document_name = ref(null)
 const data = ref(null)
 
+const drawHeaderNew = (doc, data) => {
+  const docInfo = {
+    'Hari/Tanggal': '30 April 2024',
+    'Cuaca': 'Cerah/Hujan',
+    'Inspektor': '',
+    'Jangkauan': '',
+    'Site/Lokasi': 'Jombang - Mojokerto'
+  }
+
+  const docInfoTable = Object.keys(docInfo).map(key => {
+    return {
+      content: `${key} : ${docInfo[key]}`,
+      rowSpan: 1,
+      styles: { valign: 'middle', fontSize: 8 },
+    }
+  })
+
+  doc.autoTable({
+    head: [[
+      { colSpan: 1 },
+      { colSpan: 1 },
+      { colSpan: 1 },
+    ]],
+    body: [
+      [
+        {
+          content: '',
+          rowSpan: 5,
+          styles: { halign: 'center', cellWidth: 70 },
+        },
+        {
+          content: 'PT ASTRA TOL NUSANTARA - ASTRA INFRA SOLUTIONS',
+          rowSpan: 2,
+          styles: { halign: 'center', valign: 'middle', font: 'times', fontStyle: 'bold', fontSize: 10 },
+        },
+        docInfoTable[0]
+      ],
+      [
+        docInfoTable[1]
+      ],
+      [
+        {
+          content: 'LAPORAN INSPEKSI HARIAN',
+          rowSpan: 3,
+          styles: { halign: 'center', valign: 'middle', font: 'times', fontStyle: 'bold', fontSize: 10 },
+        },
+        docInfoTable[2]
+      ],
+      [
+        docInfoTable[3]
+      ],
+      [
+        docInfoTable[4]
+      ]
+    ],
+    showHead: 'never',
+    theme: 'grid',
+    styles: {
+      textColor: 0,
+      lineColor: 0
+    },
+    didDrawCell: function (data) {
+      if (data.section !== 'body')
+        return
+
+      if (data.column.index === 0) {
+        console.log(data)
+        const textPos = data.cell;
+        doc.addImage(
+          "/astra-infra-logo.png",
+          "PNG",
+          textPos.x + (textPos.width / 2) - (60 / 2),
+          textPos.y + (textPos.height / 2) - (15 / 2),
+          60,
+          15
+        )
+      }
+    },
+
+  })
+}
+
 const drawHeader = (doc, data) => {
   const { settings } = data
 
@@ -135,38 +217,35 @@ const generatePDF = () => {
     },
     headStyles: { minCellHeight: 10 },
     bodyStyles: { minCellHeight: 50 },
-    margin: { top: 50, bottom: 49 },
+    margin: { top: 55, bottom: 49 },
     columnStyles: [
+      { cellWidth: 9 },
+      { cellWidth: 20 },
+      { cellWidth: 20 },
+      { cellWidth: 15 },
+      { cellWidth: 15 },
+      { cellWidth: 15 },
+      { cellWidth: 15 },
+      { cellWidth: 15 },
       { cellWidth: 10 },
-      { cellWidth: 30 },
+      { cellWidth: 10 },
+      { cellWidth: 10 },
+      { cellWidth: 10 },
+      { cellWidth: 15 },
+      { cellWidth: 15 },
+      { cellWidth: 25 },
       { cellWidth: 50 },
-      { cellWidth: 12 },
-      { cellWidth: 12 },
-      { cellWidth: 12 },
-      { cellWidth: 20 },
-      { cellWidth: 20 },
-      { cellWidth: 10 },
-      { cellWidth: 10 },
-      { cellWidth: 10 },
-      { cellWidth: 25 },
-      { cellWidth: 25 },
-      { cellWidth: 10 },
-      { cellWidth: 10 },
     ],
     useCss: true,
     didDrawCell: function (data) {
       if (data.section !== 'body')
         return
 
-      if (data.column.index === 2)
+      if (data.column.index === 15)
         renderImage(doc, data)
-      else if ([11, 12].indexOf(data.column.index) !== -1)
-        renderTextField(doc, data)
-      else if ([13, 14].indexOf(data.column.index) !== -1)
-        renderCheckBox(doc, data)
     },
     didDrawPage: function (data) {
-      drawHeader(doc, data)
+      drawHeaderNew(doc, data)
     }
   })
 
