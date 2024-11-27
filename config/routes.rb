@@ -55,6 +55,7 @@ Rails.application.routes.draw do
   end
 
   resources :reports, only: %i[index]
+  resources :report_dashboard, only: %i[index]
   resources :verify_pdf_signature, only: %i[create]
   resource :mfa_setup, only: %i[show new edit create destroy], controller: 'mfa_setup'
   resources :account_configs, only: %i[create]
