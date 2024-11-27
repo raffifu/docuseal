@@ -19,28 +19,47 @@ const endDate = ref(null)
 const document_name = ref(null)
 const data = ref(null)
 
-const drawHeaderNew = (doc, data) => {
+const renderTextField = (doc, data, config = { padding: { x: 0, y: 0 }, title: '' }) => {
+  const textField = new AcroFormTextField()
+
+  const { padding, title } = config
+  const { x, y, height, width } = data.cell
+
+  textField.x = x + padding.x
+  textField.y = y + padding.y
+
+  textField.height = height - padding.y
+  textField.width = width - padding.x
+
+  textField.fieldName = title
+
+  doc.addField(textField)
+}
+
+
+const drawHeaderNew = (doc) => {
   const docInfo = {
-    'Hari/Tanggal': '30 April 2024',
+    'Hari/Tanggal': startDate.value,
     'Cuaca': 'Cerah/Hujan',
     'Inspektor': '',
     'Jangkauan': '',
     'Site/Lokasi': 'Jombang - Mojokerto'
   }
 
-  const docInfoTable = Object.keys(docInfo).map(key => {
-    return {
-      content: `${key} : ${docInfo[key]}`,
-      rowSpan: 1,
-      styles: { valign: 'middle', fontSize: 8 },
-    }
-  })
+  const docInfoKey = Object.keys(docInfo).map(it => ({
+    content: it,
+    rowSpan: 1,
+    styles: { font: 'times', fontSize: 10 }
+  }))
 
   doc.autoTable({
     head: [[
       { colSpan: 1 },
       { colSpan: 1 },
-      { colSpan: 1 },
+      {
+        colSpan: 1,
+        styles: { cellWidth: 70 }
+      },
     ]],
     body: [
       [
@@ -54,10 +73,10 @@ const drawHeaderNew = (doc, data) => {
           rowSpan: 2,
           styles: { halign: 'center', valign: 'middle', font: 'times', fontStyle: 'bold', fontSize: 10 },
         },
-        docInfoTable[0]
+        docInfoKey[0]
       ],
       [
-        docInfoTable[1]
+        docInfoKey[1]
       ],
       [
         {
@@ -65,13 +84,13 @@ const drawHeaderNew = (doc, data) => {
           rowSpan: 3,
           styles: { halign: 'center', valign: 'middle', font: 'times', fontStyle: 'bold', fontSize: 10 },
         },
-        docInfoTable[2]
+        docInfoKey[2]
       ],
       [
-        docInfoTable[3]
+        docInfoKey[3]
       ],
       [
-        docInfoTable[4]
+        docInfoKey[4]
       ]
     ],
     showHead: 'never',
@@ -85,7 +104,6 @@ const drawHeaderNew = (doc, data) => {
         return
 
       if (data.column.index === 0) {
-        console.log(data)
         const textPos = data.cell;
         doc.addImage(
           "/astra-infra-logo.png",
@@ -95,6 +113,22 @@ const drawHeaderNew = (doc, data) => {
           60,
           15
         )
+      } else if (data.column.index === 2) {
+        const { content } = data.cell.raw
+        const { x, y } = data.cell.getTextPos()
+
+        doc.text(`: ${docInfo[content]}`, x + 20, y, {
+          baseline: 'hanging'
+        });
+
+        if (docInfo[content] === '') {
+          renderTextField(doc, data, {
+            padding: {
+              x: 25, y: 0
+            },
+            title: content
+          })
+        }
       }
     },
 
@@ -143,7 +177,7 @@ const signField = (doc, name) => {
   doc.setFontSize(10);
   doc.setFont('times', 'normal');
 
-  doc.text("PT. Astra Tol Nusantara - Astra Infra Solutions", x, y + 10, {
+  doc.text("Diperiksa oleh,", x, y + 10, {
     align: 'center'
   })
 
@@ -153,12 +187,30 @@ const signField = (doc, name) => {
 
   doc.setFont('times', 'bold');
 
-  doc.text(name, x, y + 30, {
-    align: 'center'
-  })
+  if (name) {
+    doc.text(name, x, y + 30, {
+      align: 'center'
+    })
 
-  const textWidth = doc.getTextWidth(name);
-  doc.line(x - textWidth / 2, y + 31, x + textWidth / 2, y + 31)
+    const textWidth = doc.getTextWidth(name);
+    doc.line(x - textWidth / 2, y + 31, x + textWidth / 2, y + 31)
+  } else {
+    const textWidth = 40
+
+    renderTextField(doc, {
+      cell: {
+        x: x - textWidth / 2,
+        y: y + 25,
+        height: 5,
+        width: textWidth
+      }
+    }, {
+      padding: { x: 0, y: 0 },
+      title: 'Signer'
+    })
+
+    doc.line(x - textWidth / 2, y + 31, x + textWidth / 2, y + 31)
+  }
 }
 const renderImage = (doc, data) => {
   if (data.cell.raw === null) return
@@ -169,21 +221,6 @@ const renderImage = (doc, data) => {
   doc.addImage(img.src, 'JPEG', textPos.x, textPos.y, dim, dim)
 }
 
-const renderTextField = (doc, data) => {
-  const textField = new AcroFormTextField()
-
-  const { x, y, height, width } = data.cell
-
-  textField.x = x
-  textField.y = y
-
-  textField.height = height
-  textField.width = width
-
-  textField.fieldName = `Rekomendasi Penanganan ${data.column.index % 2 === 0 ? 'Sementara' : 'Permanen'} ${data.row.index + 1}`
-
-  doc.addField(textField)
-}
 
 const renderCheckBox = (doc, data) => {
   const checkBox = new AcroFormButton();
@@ -241,15 +278,23 @@ const generatePDF = () => {
       if (data.section !== 'body')
         return
 
-      if (data.column.index === 15)
+      if (data.column.index === 13)
+        renderTextField(doc, data, {
+          padding: {
+            x: 0,
+            y: 0
+          },
+          title: `Fungsi_${data.row.index}`
+        })
+      else if (data.column.index === 15)
         renderImage(doc, data)
     },
-    didDrawPage: function (data) {
-      drawHeaderNew(doc, data)
+    didDrawPage: function () {
+      drawHeaderNew(doc)
     }
   })
 
-  signField(doc, "M. Defit Hermanto")
+  signField(doc, null)
 
   return doc
 }
