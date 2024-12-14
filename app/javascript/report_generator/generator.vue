@@ -6,7 +6,7 @@ import Loading from './loading.vue';
 import EmptyData from './empty_data.vue';
 
 import { ref, watchEffect } from 'vue';
-import { DailyReportGenerator, WeeklyReportGenerator } from './helpers';
+import { DailyReportGenerator, WeeklyReportGenerator, MonthlyReportGenerator } from './helpers';
 
 const props = defineProps({
   authenticityToken: String,
@@ -28,6 +28,8 @@ const getReportGenerator = () => {
     return DailyReportGenerator
   else if (laporanType.value === 'mingguan')
     return WeeklyReportGenerator
+  else if (laporanType.value === 'bulanan')
+    return MonthlyReportGenerator
 
   return null
 }
@@ -37,6 +39,9 @@ const updateDocumentName = () => {
     documentName.value = `Laporan Harian - ${localeDateString(startDate.value)}.pdf`
   else if (laporanType.value === 'mingguan')
     documentName.value = `Laporan Mingguan - ${localeDateString(startDate.value)} sd ${localeDateString(endDate.value)}.pdf`
+  else if (laporanType.value === 'bulanan')
+    documentName.value = `Laporan Bulanan - ${localeDateString(startDate.value)} sd ${localeDateString(endDate.value)}.pdf`
+
 }
 
 const downloadPDF = () => {
@@ -116,6 +121,12 @@ watchEffect(async () => {
   isLoading.value = true
   data.value = null
 
+  if (laporanType.value === 'harian') {
+    const currentDate = new Date(startDate.value)
+    currentDate.setDate(currentDate.getDate() + 1)
+    endDate.value = formatDate(currentDate)
+  }
+
   try {
     const resp = await fetch(`${props.backendUrl}/api/v1/inspeksi?start_date=${startDate.value}&end_date=${endDate.value}`)
 
@@ -133,9 +144,13 @@ watchEffect(async () => {
 
 watchEffect(() => {
   const today = new Date()
+  today.setDate(today.getDate() + 1)
   endDate.value = formatDate(today)
 
-  if (laporanType.value === 'harian') {
+  console.log('urn')
+
+  if (laporanType.value === 'harian' || laporanType.value === 'bulanan') {
+    today.setDate(today.getDate() - 1)
     startDate.value = formatDate(today)
   } else if (laporanType.value === 'mingguan') {
     today.setDate(today.getDate() - 7)
@@ -155,16 +170,17 @@ watchEffect(() => {
       <select class="select select-bordered" v-model="laporanType">
         <option value="harian">Laporan Harian</option>
         <option value="mingguan">Laporan Mingguan</option>
+        <option value="bulanan">Laporan Bulanan</option>
       </select>
     </label>
     <label class="mx-1 form-control">
       <div class="label">
-        <span class="label-text" v-if="laporanType === 'harian'">Date</span>
+        <span class="label-text" v-if="laporanType === 'harian' || laporanType === 'bulanan'">Date</span>
         <span class="label-text" v-else>Start Date</span>
       </div>
       <input id="startDate" type="date" class="input input-md input-bordered" v-model="startDate" />
     </label>
-    <label class="mx-1 form-control" v-if="laporanType !== 'harian'">
+    <label class="mx-1 form-control" v-if="laporanType !== 'harian' && laporanType !== 'bulanan'">
       <div class="label">
         <span class="label-text">End Date</span>
       </div>
