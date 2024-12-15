@@ -1,44 +1,12 @@
 import { jsPDF, AcroFormTextField, AcroFormButton } from 'jspdf'
 import 'jspdf-autotable'
 
-const drawHeader = (data) => {
-  const { settings } = data
-
-  if (settings === undefined) return
-
-  this.doc.setFontSize(15);
-  this.doc.setFont('times', 'bold');
-  this.doc.text("Laporan Inspeksi Harian", settings.margin.left, 20);
-
-  this.doc.setFontSize(10);
-  this.doc.text("AIS Site", settings.margin.left, 35)
-  this.doc.text("Lingkup Pekerjaan", settings.margin.left, 40)
-  this.doc.text("Tanggal", settings.margin.left, 45)
-
-  this.doc.setFont('times', 'normal')
-  this.doc.text('Jombang - Mojokerto', 100, 35, {
-    align: 'right',
-  });
-  this.doc.text('19-Jun-24', 100, 45, {
-    align: 'right',
-  });
-
-  this.doc.addImage(
-    "/astra-infra-logo.png",
-    "PNG",
-    220,
-    30,
-    60,
-    15
-  )
-}
-
 class ReportGenerator {
-  constructor(startDate, endDate) {
+  constructor(startDate, endDate, format = 'a3') {
     this.doc = new jsPDF({
       orientation: "portrait",
       unit: "mm",
-      format: "a3",
+      format: format,
     })
 
     this.startDate = startDate
@@ -485,6 +453,224 @@ export class WeeklyReportGenerator extends ReportGenerator {
     this._signField("Diperiksa oleh,", null, "Staff Inspeksi", 230)
 
     return this.doc
+  }
+}
+
+export class MonthlyReportGenerator extends ReportGenerator {
+  constructor(startDate, endDate) {
+    super(startDate, endDate, 'a4')
+  }
+
+  #header() {
+    this.doc.autoTable({
+      head: [[
+        { colSpan: 1 },
+        { colSpan: 1 },
+      ]],
+      body: [
+        [
+          {
+            content: '',
+            rowSpan: 2,
+            styles: { halign: 'center', cellWidth: 70 },
+          },
+          {
+            content: 'PT ASTRA TOL NUSANTARA - ASTRA INFRA SOLUTIONS',
+            rowSpan: 1,
+            styles: { halign: 'center', valign: 'middle', font: 'times', fontStyle: 'bold', fontSize: 10 },
+          }
+        ],
+        [
+          {
+            content: 'LAPORAN INSPEKSI BULANAN',
+            rowSpan: 1,
+            styles: { halign: 'center', valign: 'middle', font: 'times', fontStyle: 'bold', fontSize: 10 },
+          }
+        ],
+      ],
+      showHead: 'never',
+      theme: 'grid',
+      styles: {
+        textColor: 0,
+        lineColor: 0
+      },
+      didDrawCell: (data) => {
+        if (data.section !== 'body')
+          return
+
+        if (data.column.index === 0) {
+          const textPos = data.cell;
+          this.doc.addImage(
+            "/astra-infra-logo.png",
+            "PNG",
+            textPos.x + (textPos.width / 2) - (60 / 2),
+            textPos.y + (textPos.height / 2) - (15 / 2),
+            60,
+            15
+          )
+        }
+      },
+    })
+  }
+
+  generate() {
+    const tables = document.getElementsByTagName('table')
+
+    const arr = Object.values(tables);
+    arr.forEach((tb, idx) => {
+      const { id } = tb
+      if (!id)
+        return
+
+      if (id.includes('severity')) {
+        this.#severity(id, "Level severity setiap defect")
+        if (idx !== arr.length - 1) this.doc.addPage()
+      } else {
+        this.#chart(id)
+        this.#summary(id, `Performa aset ${id.slice(8)}`)
+      }
+    })
+
+    return this.doc
+  }
+
+  #chart(id) {
+    const canvasPrefix = ['pie-summary-', 'pie-volume-', 'bar-risk-']
+
+    this.doc.autoTable({
+      margin: { top: 35 },
+      head: [['', '', '']],
+      body: [['', '', '']],
+      bodyStyles: { minCellHeight: 50 },
+      theme: 'grid',
+      styles: {
+        textColor: 0,
+        lineColor: 0,
+        lineWidth: 0,
+      },
+      showHead: 'never',
+      didDrawCell: (data) => {
+        if (data.section !== 'body')
+          return
+
+        const targetId = `${canvasPrefix[data.column.index]}${id.slice(8)}`
+
+        this.#plotChart(targetId, data.cell.width, data.cell.height, {
+          x: data.cell.x,
+          y: data.cell.y
+        })
+
+      },
+      didDrawPage: () => {
+        this.#header()
+      }
+    })
+
+  }
+
+  #calculateProportionalSize(canvasWidth, canvasHeight, maxWidth, maxHeight) {
+    const aspectRatio = canvasWidth / canvasHeight;
+    let width = maxWidth;
+    let height = maxHeight;
+
+    if (maxWidth / maxHeight > aspectRatio) {
+      width = maxHeight * aspectRatio;
+      height = maxHeight;
+    } else {
+      width = maxWidth;
+      height = maxWidth / aspectRatio;
+    }
+
+    return { width, height };
+  }
+
+  #plotChart(id, maxWidth, maxHeight, pos = { x: 0, y: 0 }) {
+    const { x, y } = pos
+
+    const canvas = document.getElementById(id);
+
+    const dataURL = canvas.toDataURL('image/png');
+
+    const canvasWidth = canvas.width;
+    const canvasHeight = canvas.height;
+
+    const { width, height } = this.#calculateProportionalSize(canvasWidth, canvasHeight, maxWidth, maxHeight)
+
+    let px = 0, py = 0
+
+    if (width != maxWidth)
+      px = (maxWidth - width) / 2
+    if (height != maxHeight)
+      py = (maxHeight - height) / 2
+
+    this.doc.addImage(dataURL, 'PNG', x + px, y + py, width, height);
+  }
+
+  #summary(id, title) {
+    let loc_x, loc_y
+
+    this.doc.autoTable({
+      html: `#${id}`,
+      styles: {
+        font: 'times',
+        fontSize: 6
+      },
+      useCss: true,
+      didDrawCell: (data) => {
+        if (data.section === 'head' && data.column.index === 0 && data.row.index === 0) {
+          loc_x = data.cell.x
+          loc_y = data.cell.y
+        }
+      }
+    })
+
+    if (!loc_x || !loc_y) return
+
+    this.doc.setFontSize(12);
+    this.doc.setFont('times', 'bold');
+    this.doc.text(title, loc_x, loc_y - 2)
+  }
+  #severity(id, title) {
+    let loc_x, loc_y
+    this.doc.autoTable({
+      html: `#${id}`,
+      styles: {
+        font: 'times',
+        fontSize: 6,
+      },
+      useCss: true,
+      didDrawCell: (data) => {
+        if (data.section === 'head' && data.column.index === 0 && data.row.index === 0) {
+          loc_x = data.cell.x
+          loc_y = data.cell.y
+        }
+
+        if (data.section !== 'body')
+          return
+
+        if (data.column.index === 6) {
+          this._renderTextField(data, {
+            padding: {
+              x: 0,
+              y: 0
+            },
+            title: `instruksi_bujt_${data.row.index}`
+          })
+        }
+      },
+    })
+
+    this._signField("Disetujui oleh,", "Haries Istyawan", "Site Manager", 40)
+
+    this._signField("Diperiksa oleh,", "Haries Istyawan", "Kasie Layanan Pemeliharaan", 125)
+
+    this._signField("Dibuat oleh,", null, "Staff Inspeksi", 175)
+
+    if (!loc_x || !loc_y) return
+
+    this.doc.setFontSize(12);
+    this.doc.setFont('times', 'bold');
+    this.doc.text(title, loc_x, loc_y - 2)
   }
 }
 

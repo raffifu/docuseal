@@ -1,11 +1,12 @@
 <script setup>
 import WeeklyTable from './report_template/weekly_table.vue';
 import DailyTable from './report_template/daily_table.vue';
+import MonthlyTable from './report_template/monthly_table.vue';
 
 import Loading from './loading.vue';
 import EmptyData from './empty_data.vue';
 
-import { ref, watchEffect } from 'vue';
+import { ref, watchEffect, onMounted } from 'vue';
 import { DailyReportGenerator, WeeklyReportGenerator, MonthlyReportGenerator } from './helpers';
 
 const props = defineProps({
@@ -40,8 +41,7 @@ const updateDocumentName = () => {
   else if (laporanType.value === 'mingguan')
     documentName.value = `Laporan Mingguan - ${localeDateString(startDate.value)} sd ${localeDateString(endDate.value)}.pdf`
   else if (laporanType.value === 'bulanan')
-    documentName.value = `Laporan Bulanan - ${localeDateString(startDate.value)} sd ${localeDateString(endDate.value)}.pdf`
-
+    documentName.value = `Laporan Bulanan - ${localeDateString(startDate.value, { month: 'long', year: 'numeric' })}.pdf`
 }
 
 const downloadPDF = () => {
@@ -93,12 +93,9 @@ const handleSubmit = async () => {
   }
 }
 
-const localeDateString = (dateString) => {
+const localeDateString = (dateString, options = { day: 'numeric', month: 'short', year: 'numeric' }) => {
   // Create a Date object from the input string
   const date = new Date(dateString);
-
-  // Define options for formatting
-  const options = { day: 'numeric', month: 'short', year: 'numeric' };
 
   // Format the date using toLocaleDateString
   return date.toLocaleDateString('id-ID', options);
@@ -112,7 +109,37 @@ const formatDate = (date) => {
   return `${yyyy}-${mm}-${dd}`;
 }
 
-// FIXME: endDate in harian laporanType must be same as startDate
+const processMonthData = async () => {
+  const date = new Date(startDate.value)
+  const month = date.getMonth() + 1
+  const year = date.getFullYear()
+
+  try {
+    const resp = await fetch(`${props.backendUrl}/api/v1/report?month=${month}&year=${year}`)
+
+    data.value = await resp.json()
+
+    if (Object.keys(data.value).length > 0)
+      updateDocumentName()
+  } catch (err) {
+    console.log(err)
+  }
+
+}
+
+const processGenericData = async () => {
+  try {
+    const resp = await fetch(`${props.backendUrl}/api/v1/inspeksi?start_date=${startDate.value}&end_date=${endDate.value}`)
+
+    data.value = await resp.json()
+
+    if (data.value.length > 0)
+      updateDocumentName()
+  } catch (err) {
+    console.log(err)
+  }
+}
+
 watchEffect(async () => {
   if (!startDate.value || !endDate.value) return;
 
@@ -127,27 +154,18 @@ watchEffect(async () => {
     endDate.value = formatDate(currentDate)
   }
 
-  try {
-    const resp = await fetch(`${props.backendUrl}/api/v1/inspeksi?start_date=${startDate.value}&end_date=${endDate.value}`)
+  if (laporanType.value === 'bulanan')
+    await processMonthData()
+  else
+    await processGenericData()
 
-    data.value = await resp.json()
-
-    if (data.value.length > 0)
-      updateDocumentName()
-
-    isLoading.value = false
-  } catch (err) {
-    console.log(err)
-  }
-
+  isLoading.value = false
 })
 
 watchEffect(() => {
   const today = new Date()
   today.setDate(today.getDate() + 1)
   endDate.value = formatDate(today)
-
-  console.log('urn')
 
   if (laporanType.value === 'harian' || laporanType.value === 'bulanan') {
     today.setDate(today.getDate() - 1)
@@ -194,6 +212,7 @@ watchEffect(() => {
 
     <DailyTable v-if="laporanType === 'harian'" :data="data" />
     <WeeklyTable v-else-if="laporanType === 'mingguan'" :data="data" />
+    <MonthlyTable v-else-if="laporanType === 'bulanan'" :data="data" />
 
     <div class="flex gap-2 p-2 justify-center">
       <button class="btn" @click="downloadPDF">Download PDF</button>
