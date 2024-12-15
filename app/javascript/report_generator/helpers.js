@@ -71,9 +71,25 @@ class ReportGenerator {
       align: 'center'
     })
 
-    this.doc.text(position, x, y + 35, {
-      align: 'center'
-    })
+    if (position) {
+      this.doc.text(position, x, y + 35, {
+        align: 'center'
+      })
+    } else {
+      const textWidth = 40
+
+      this._renderTextField({
+        cell: {
+          x: x - textWidth / 2,
+          y: y + 32,
+          height: 5,
+          width: textWidth
+        }
+      }, {
+        padding: { x: 0, y: 0 },
+        title: 'Position'
+      })
+    }
 
     this.doc.setFont('times', 'bold');
 
@@ -449,7 +465,8 @@ export class WeeklyReportGenerator extends ReportGenerator {
       }
     })
 
-    this._signField("Disetujui oleh,", "Haries Istyawan", "Kasie Layanan Pemeliharaan", 70)
+    this._signField("Disetujui oleh,", null, null, 50)
+    this._signField("Disetujui oleh,", "Haries Istyawan", "Kasie Layanan Pemeliharaan", 100)
     this._signField("Diperiksa oleh,", null, "Staff Inspeksi", 230)
 
     return this.doc
@@ -626,7 +643,7 @@ export class MonthlyReportGenerator extends ReportGenerator {
 
     if (!loc_x || !loc_y) return
 
-    this.doc.setFontSize(12);
+    this.doc.setFontSize(11);
     this.doc.setFont('times', 'bold');
     this.doc.text(title, loc_x, loc_y - 2)
   }
@@ -668,7 +685,7 @@ export class MonthlyReportGenerator extends ReportGenerator {
 
     if (!loc_x || !loc_y) return
 
-    this.doc.setFontSize(12);
+    this.doc.setFontSize(11);
     this.doc.setFont('times', 'bold');
     this.doc.text(title, loc_x, loc_y - 2)
   }
