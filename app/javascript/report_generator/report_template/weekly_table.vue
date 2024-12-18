@@ -5,21 +5,18 @@ const props = defineProps({
 
 const processedData = {}
 props.data.forEach(it => {
-  const key = `${it.aset}##${it.severity}##${it.subindikator}`
+  const key = `${it.jenis_aset}##${it.severity}##${it.defect}##${it.satuan}`
 
   if (Object.keys(processedData).includes(key)) {
     const item = processedData[key]
     processedData[key] = {
       ...item,
-      volume: Number(item.volume) + Number(it.volume)
+      banyak_temuan: Number(item.banyak_temuan) + Number(it.banyak_temuan)
     }
   } else {
     processedData[key] = {
-      aset: it.aset,
-      subindikator: it.subindikator,
-      volume: Number(it.volume),
-      severity: it.severity,
-      satuan: it.satuan,
+      ...it,
+      banyak_temuan: Number(it.banyak_temuan),
     }
   }
 })
@@ -35,7 +32,7 @@ props.data.forEach(it => {
         <th colspan="1" rowspan="2">Volume</th>
         <th colspan="1" rowspan="2">Satuan</th>
         <th colspan="1" rowspan="2">Severity Level</th>
-        <th colspan="1" rowspan="2">Keterangan</th>
+        <th colspan="1" rowspan="2">Jenis Penanganan</th>
         <th colspan="2" rowspan="1">Rekomendasi</th>
         <th colspan="2" rowspan="1">Approval BUJT</th>
         <th colspan="1" rowspan="2">Catatan</th>
@@ -50,9 +47,9 @@ props.data.forEach(it => {
     <tbody>
       <tr v-for="(it, idx) in Object.values(processedData)" :key="idx">
         <td>{{ idx + 1 }}</td>
-        <td>{{ it.aset }}</td>
-        <td>{{ it.subindikator }}</td>
-        <td>{{ it.volume }}</td>
+        <td>{{ it.jenis_aset }}</td>
+        <td>{{ it.defect }}</td>
+        <td>{{ it.banyak_temuan }}</td>
         <td>{{ it.satuan }}</td>
         <td>{{ it.severity }}</td>
         <td></td>

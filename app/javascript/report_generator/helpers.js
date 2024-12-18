@@ -40,19 +40,26 @@ class ReportGenerator {
     this.doc.addImage(img.src, 'JPEG', textPos.x, textPos.y, dim, dim)
   }
 
+  _renderCheckBoxText(text, config = { title: '', x: 0, y: 0 }) {
+    const { title, x, y } = config
 
-  _renderCheckBox(data, config = { title: '' }) {
+    this.doc.text(text, x + 5, y, {
+      baseline: 'middle'
+    })
+    this._renderCheckBox({ title: title, x: x, y: y })
+  }
+
+  _renderCheckBox(config = { title: '' }) {
     const checkBox = new AcroFormButton();
+    const { title, x, y } = config
 
-    checkBox.fieldName = config.title
-
-    const { x, y, height, width } = data.cell
+    checkBox.fieldName = title
 
     checkBox.width = 5
     checkBox.height = 5
 
-    checkBox.x = x + width / 2 - 2.5
-    checkBox.y = y + height / 2 - 2.5
+    checkBox.x = x - 2.5
+    checkBox.y = y - 2.5
 
     this.doc.addField(checkBox)
   }
@@ -235,18 +242,18 @@ export class DailyReportGenerator extends ReportGenerator {
       bodyStyles: { minCellHeight: 50 },
       margin: { top: 55, bottom: 44 },
       columnStyles: [
-        { cellWidth: 9 },
+        { cellWidth: 8 },
         { cellWidth: 20 },
         { cellWidth: 20 },
-        { cellWidth: 15 },
-        { cellWidth: 15 },
-        { cellWidth: 15 },
-        { cellWidth: 15 },
-        { cellWidth: 15 },
+        { cellWidth: 14 },
+        { cellWidth: 14 },
+        { cellWidth: 14 },
+        { cellWidth: 14 },
+        { cellWidth: 14 },
         { cellWidth: 10 },
-        { cellWidth: 10 },
-        { cellWidth: 10 },
-        { cellWidth: 10 },
+        { cellWidth: 12 },
+        { cellWidth: 12 },
+        { cellWidth: 12 },
         { cellWidth: 15 },
         { cellWidth: 15 },
         { cellWidth: 25 },
@@ -335,6 +342,10 @@ export class WeeklyReportGenerator extends ReportGenerator {
       },
     })
 
+  }
+
+  generate() {
+    // Generate table inspektor
     this.doc.autoTable({
       head: [[
         {
@@ -398,6 +409,7 @@ export class WeeklyReportGenerator extends ReportGenerator {
 
       showHead: 'never',
       theme: 'grid',
+      margin: { top: 35 },
       styles: {
         font: 'times',
         fontSize: 8,
@@ -405,11 +417,12 @@ export class WeeklyReportGenerator extends ReportGenerator {
         lineWidth: 0,
         cellPadding: 1
       },
+      didDrawPage: () => {
+        this.#header()
+      }
     })
-  }
 
-  generate() {
-
+    // Generate laporan table
     this.doc.autoTable({
       html: '#laporan',
       styles: {
@@ -417,8 +430,7 @@ export class WeeklyReportGenerator extends ReportGenerator {
         fontSize: 6
       },
       headStyles: { minCellHeight: 10 },
-      bodyStyles: { minCellHeight: 42 },
-      margin: { top: 60, bottom: 45 },
+      bodyStyles: { minCellHeight: 24 },
       columnStyles: [
         { cellWidth: 9 },
         { cellWidth: 25 },
@@ -457,17 +469,36 @@ export class WeeklyReportGenerator extends ReportGenerator {
             },
             title: `${textFieldItem[data.column.index]}_${data.row.index}`
           })
-        else if (Object.keys(checkboxItem).includes(data.column.index.toString()))
-          this._renderCheckBox(data, { title: `${checkboxItem[data.column.index]}_${data.row.index}` })
-      },
-      didDrawPage: () => {
-        this.#header()
+        else if (Object.keys(checkboxItem).includes(data.column.index.toString())) {
+          const { x, y, height, width } = data.cell
+
+          this._renderCheckBox({ title: `${checkboxItem[data.column.index]}_${data.row.index}`, x: x + width / 2, y: y + height / 2 })
+        } else if (data.column.index === 6) {
+          const { x, y, height } = data.cell
+
+
+          const checkBoxText = [
+            'Rutin',
+            'RR',
+            'Project Based',
+          ]
+
+          const space = height / checkBoxText.length
+          checkBoxText.forEach((text, idx) => {
+            const targetX = x + 5
+            const targetY = y + (idx * space) + space / 2
+
+            this._renderCheckBoxText(text, {
+              title: `${text}_${data.row.index}`, x: targetX, y: targetY
+            })
+          })
+        }
       }
     })
 
     this._signField("Disetujui oleh,", null, null, 50)
-    this._signField("Disetujui oleh,", "Haries Istyawan", "Kasie Layanan Pemeliharaan", 100)
-    this._signField("Diperiksa oleh,", null, "Staff Inspeksi", 230)
+    this._signField("Diperiksa oleh,", null, "Kasie Pemeliharaan", 100)
+    this._signField("Dibuat oleh,", null, "Staff Inspeksi", 230)
 
     return this.doc
   }
@@ -633,6 +664,17 @@ export class MonthlyReportGenerator extends ReportGenerator {
         fontSize: 6
       },
       useCss: true,
+      columnStyles: [
+        { cellWidth: 8 },
+        { cellWidth: 39 },
+        { cellWidth: 15 },
+        { cellWidth: 19 },
+        { cellWidth: 21 },
+        { cellWidth: 19 },
+        { cellWidth: 21 },
+        { cellWidth: 19 },
+        { cellWidth: 21 },
+      ],
       didDrawCell: (data) => {
         if (data.section === 'head' && data.column.index === 0 && data.row.index === 0) {
           loc_x = data.cell.x
@@ -677,9 +719,9 @@ export class MonthlyReportGenerator extends ReportGenerator {
       },
     })
 
-    this._signField("Disetujui oleh,", "Haries Istyawan", "Site Manager", 40)
+    this._signField("Disetujui oleh,", null, "Site Manager", 40)
 
-    this._signField("Diperiksa oleh,", "Haries Istyawan", "Kasie Layanan Pemeliharaan", 125)
+    this._signField("Diperiksa oleh,", null, "Kasie Layanan Pemeliharaan", 125)
 
     this._signField("Dibuat oleh,", null, "Staff Inspeksi", 175)
 

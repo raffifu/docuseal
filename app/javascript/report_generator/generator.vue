@@ -6,7 +6,7 @@ import MonthlyTable from './report_template/monthly_table.vue';
 import Loading from './loading.vue';
 import EmptyData from './empty_data.vue';
 
-import { ref, watchEffect, onMounted } from 'vue';
+import { ref, watch } from 'vue';
 import { DailyReportGenerator, WeeklyReportGenerator, MonthlyReportGenerator } from './helpers';
 
 const props = defineProps({
@@ -23,6 +23,8 @@ const endDate = ref(null)
 
 const documentName = ref('Generated Document')
 const data = ref(null)
+
+let controller = null
 
 const getReportGenerator = () => {
   if (laporanType.value === 'harian')
@@ -109,72 +111,71 @@ const formatDate = (date) => {
   return `${yyyy}-${mm}-${dd}`;
 }
 
-const processMonthData = async () => {
-  const date = new Date(startDate.value)
-  const month = date.getMonth() + 1
-  const year = date.getFullYear()
+const getUrl = () => {
+  if (laporanType.value === 'bulanan') {
+    const date = new Date(startDate.value)
+    const month = date.getMonth() + 1
+    const year = date.getFullYear()
 
-  try {
-    const resp = await fetch(`${props.backendUrl}/api/v1/report?month=${month}&year=${year}`)
-
-    data.value = await resp.json()
-
-    if (Object.keys(data.value).length > 0)
-      updateDocumentName()
-  } catch (err) {
-    console.log(err)
-  }
-
+    return `${props.backendUrl}/api/v1/report?month=${month}&year=${year}`
+  } else if (laporanType.value === 'harian')
+    return `${props.backendUrl}/api/v1/inspeksi?start_date=${startDate.value}&end_date=${startDate.value}`
+  else if (laporanType.value === 'mingguan')
+    return `${props.backendUrl}/api/v1/looker?start_date=${startDate.value}&end_date=${endDate.value}`
 }
 
-const processGenericData = async () => {
-  try {
-    const resp = await fetch(`${props.backendUrl}/api/v1/inspeksi?start_date=${startDate.value}&end_date=${endDate.value}`)
 
-    data.value = await resp.json()
+watch(
+  [startDate, endDate],
+  async ([newStartDate, newEndDate], _) => {
+    if (controller) {
+      controller.abort()
+    }
 
-    if (data.value.length > 0)
+    controller = new AbortController()
+
+    if (!newStartDate || !newEndDate) return;
+    if (!props.backendUrl) return
+
+    isLoading.value = true
+    data.value = null
+
+    try {
+      const url = getUrl()
+      const resp = await fetch(url, { signal: controller.signal })
+
+      data.value = await resp.json()
+
       updateDocumentName()
-  } catch (err) {
-    console.log(err)
+    } catch (error) {
+      if (error instanceof Error && error.name !== 'AbortError') {
+
+        console.error(error)
+        data.value = null
+      }
+    }
+
+    isLoading.value = false
   }
-}
+)
 
-watchEffect(async () => {
-  if (!startDate.value || !endDate.value) return;
+watch(
+  laporanType,
+  (newLaporanType, _) => {
+    const today = new Date()
+    today.setDate(today.getDate() + 1)
+    endDate.value = formatDate(today)
 
-  if (!props.backendUrl) return
-
-  isLoading.value = true
-  data.value = null
-
-  if (laporanType.value === 'harian') {
-    const currentDate = new Date(startDate.value)
-    currentDate.setDate(currentDate.getDate() + 1)
-    endDate.value = formatDate(currentDate)
-  }
-
-  if (laporanType.value === 'bulanan')
-    await processMonthData()
-  else
-    await processGenericData()
-
-  isLoading.value = false
-})
-
-watchEffect(() => {
-  const today = new Date()
-  today.setDate(today.getDate() + 1)
-  endDate.value = formatDate(today)
-
-  if (laporanType.value === 'harian' || laporanType.value === 'bulanan') {
-    today.setDate(today.getDate() - 1)
-    startDate.value = formatDate(today)
-  } else if (laporanType.value === 'mingguan') {
-    today.setDate(today.getDate() - 7)
-    startDate.value = formatDate(today)
-  }
-})
+    if (newLaporanType === 'harian' || newLaporanType === 'bulanan') {
+      today.setDate(today.getDate() - 1)
+      startDate.value = formatDate(today)
+    } else if (newLaporanType === 'mingguan') {
+      today.setDate(today.getDate() - 7)
+      startDate.value = formatDate(today)
+    }
+  },
+  { immediate: true }
+)
 </script>
 
 

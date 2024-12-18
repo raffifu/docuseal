@@ -25,7 +25,7 @@ defineProps({
         <th colspan="1">Awal</th>
         <th colspan="1">Akhir</th>
         <th colspan="1">Jalur</th>
-        <th colspan="1">LAJUR / OS / IS</th>
+        <th colspan="1">LAJUR</th>
         <th colspan="1">P</th>
         <th colspan="1">L</th>
         <th colspan="1">T</th>
@@ -37,7 +37,7 @@ defineProps({
       <tr v-for="(it, idx) in data" :key="idx">
         <td>{{ idx + 1 }}</td>
         <td>{{ it.aset }}</td>
-        <td>{{ it.subindikator }}</td>
+        <td>{{ it.defect }}</td>
         <td>{{ it.area }}</td>
         <td>{{ it.awal }}</td>
         <td>{{ it.akhir }}</td>
