@@ -118,9 +118,12 @@ const getUrl = () => {
     const year = date.getFullYear()
 
     return `${props.backendUrl}/api/v1/report?month=${month}&year=${year}`
-  } else if (laporanType.value === 'harian')
-    return `${props.backendUrl}/api/v1/inspeksi?start_date=${startDate.value}&end_date=${startDate.value}`
-  else if (laporanType.value === 'mingguan')
+  } else if (laporanType.value === 'harian') {
+    const date = new Date(startDate.value)
+    date.setDate(date.getDate() + 1)
+
+    return `${props.backendUrl}/api/v1/inspeksi?start_date=${startDate.value}&end_date=${formatDate(date)}`
+  } else if (laporanType.value === 'mingguan')
     return `${props.backendUrl}/api/v1/looker?start_date=${startDate.value}&end_date=${endDate.value}`
 }
 
