@@ -92,15 +92,17 @@ class ReportGenerator {
     if (y === undefined)
       return
 
-    this.doc.setFontSize(10);
-    this.doc.setFont('times', 'normal');
+    if (preText) {
+      this.doc.setFontSize(10);
+      this.doc.setFont('times', 'normal');
 
-    this.doc.text(preText, x, y + 10, {
-      align: 'center'
-    })
+      this.doc.text(preText, x, y + 10, {
+        align: 'center'
+      })
+    }
 
     if (position) {
-      this.doc.text(position, x, y + 35, {
+      this.doc.text(position, x, y + 40, {
         align: 'center'
       })
     } else {
@@ -109,7 +111,7 @@ class ReportGenerator {
       this._renderTextField({
         cell: {
           x: x - textWidth / 2,
-          y: y + 32,
+          y: y + 38,
           height: 5,
           width: textWidth
         }
@@ -122,19 +124,19 @@ class ReportGenerator {
     this.doc.setFont('times', 'bold');
 
     if (name) {
-      this.doc.text(name, x, y + 30, {
+      this.doc.text(name, x, y + 35, {
         align: 'center'
       })
 
       const textWidth = this.doc.getTextWidth(name);
-      this.doc.line(x - textWidth / 2, y + 31, x + textWidth / 2, y + 31)
+      this.doc.line(x - textWidth / 2, y + 36, x + textWidth / 2, y + 36)
     } else {
       const textWidth = 40
 
       this._renderTextField({
         cell: {
           x: x - textWidth / 2,
-          y: y + 25,
+          y: y + 30,
           height: 5,
           width: textWidth
         }
@@ -143,7 +145,7 @@ class ReportGenerator {
         title: 'Signer'
       })
 
-      this.doc.line(x - textWidth / 2, y + 31, x + textWidth / 2, y + 31)
+      this.doc.line(x - textWidth / 2, y + 36, x + textWidth / 2, y + 36)
     }
   }
 }
@@ -260,8 +262,8 @@ export class DailyReportGenerator extends ReportGenerator {
         fontSize: 6
       },
       headStyles: { minCellHeight: 10 },
-      bodyStyles: { minCellHeight: 50 },
-      margin: { top: 55, bottom: 44 },
+      bodyStyles: { minCellHeight: 48 },
+      margin: { top: 55, bottom: 56 },
       columnStyles: [
         { cellWidth: 8 },
         { cellWidth: 20 },
@@ -301,7 +303,44 @@ export class DailyReportGenerator extends ReportGenerator {
       }
     })
 
-    this._signField("Diperiksa oleh,", null, "Staff Inspeksi", 230)
+    this.doc.autoTable({
+      head: [
+        [{ content: 'Diperiksa oleh,' }, { content: 'Dibuat oleh,', colSpan: 3 }]
+      ],
+      body: [['', '', '', '']],
+      bodyStyles: { minCellHeight: 28 },
+      margin: { left: 93 },
+      styles: {
+        font: 'times',
+        fontStyle: 'normal',
+        fontSize: 8,
+        textColor: 0,
+        lineColor: 0,
+        fillColor: false,
+        lineWidth: 0.1,
+        halign: 'center'
+      },
+      columnStyles: [
+        { cellWidth: 55 },
+        { cellWidth: 45 },
+        { cellWidth: 45 },
+        { cellWidth: 45 },
+      ],
+      theme: 'grid',
+      didDrawCell: (data) => {
+        if (data.section !== 'body')
+          return
+
+        const { x, width } = data.cell
+
+        let text = "Inspektor"
+        if (data.column.index === 0)
+          text = "Staf Inspeksi"
+
+        this._signField(null, null, text, x + width / 2)
+      }
+    })
+
 
     return this.doc
   }

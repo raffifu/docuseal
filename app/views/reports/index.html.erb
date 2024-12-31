@@ -1,4 +1,7 @@
 <div class="flex justify-between items-center w-full mb-4">
   <h1 class="text-2xl truncate md:text-3xl sm:text-4xl font-bold md:block ">Report Generator</h1>
+  <a class="inline-flex btn btn-warning btn-sm" href="/input_data" target="_blank">
+    + Input Data
+  </a>
 </div>
 <report-generator data-form-id="<%= SecureRandom.uuid %>" data-backend-url="<%= ENV['BACKEND_URL'] %>"></report-generator>
