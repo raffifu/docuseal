@@ -49,7 +49,7 @@ props.data.forEach(it => {
         <td>{{ idx + 1 }}</td>
         <td>{{ it.jenis_aset }}</td>
         <td>{{ it.defect }}</td>
-        <td>{{ it.banyak_temuan }}</td>
+        <td>{{ it.banyak_temuan.toFixed(2) }}</td>
         <td>{{ it.satuan }}</td>
         <td>{{ it.severity }}</td>
         <td></td>
